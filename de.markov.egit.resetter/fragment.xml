@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<fragment>
+	<extension name="%RepositoryCommandsLabel" point="org.eclipse.ui.commands">
+		<command categoryId="org.eclipse.egit.ui.commandCategory"
+			defaultHandler="org.eclipse.egit.ui.internal.actions.ResetConfigWithHead"
+			id="de.markov.egit.resettercommand" name="Reset maven changed files">
+		</command>
+	</extension>
+	<extension point="org.eclipse.ui.commandImages">
+		<image commandId="de.markov.egit.resettercommand"
+			icon="icons/etool16/likes.png">
+		</image>
+	</extension>
+	<extension point="org.eclipse.ui.menus">
+		<menuContribution allPopups="false" locationURI="toolbar:org.eclipse.egit.ui.RepositoriesView?after=org.eclipse.egit.ui.RepositoriesLinkWithSelection">
+			<command 
+				commandId="de.markov.egit.resettercommand"
+				style="push"
+				tooltip="Reset Configuration Files" />
+		</menuContribution>
+	</extension>
+</fragment>

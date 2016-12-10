@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Git Resetter
+Bundle-SymbolicName: de.markov.egit.resetter;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Fragment-Host: org.eclipse.egit.ui;bundle-version="[4.4.0,5.0.0)"
+Bundle-Vendor: Veselin Markov
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Import-Package: org.eclipse.swt.widgets
