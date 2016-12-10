@@ -1,0 +1,1 @@
+# egit-configs-resetter
