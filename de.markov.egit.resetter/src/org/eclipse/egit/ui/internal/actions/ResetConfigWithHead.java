@@ -1,5 +1,19 @@
 /*
- * Created on 10.12.2016 Autor: markov. All rights reserved.
+ * Copyright 2016-2018 Veselin Markov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * Created on 10.12.2016
  */
 package org.eclipse.egit.ui.internal.actions;
 
@@ -27,6 +41,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
+import org.eclipse.egit.core.op.DeletePathsOperation;
 import org.eclipse.egit.core.op.DiscardChangesOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
@@ -40,13 +55,6 @@ import org.eclipse.jgit.lib.Repository;
 public class ResetConfigWithHead extends DiscardChangesActionHandler {
 
 	volatile Map<IndexDiffChangedListenerImplementation, IndexDiffCacheEntry> cachedEntries = new HashMap<>();
-
-	private IndexDiffCacheEntry toDiffCache(Repository repository) {
-		IndexDiffChangedListenerImplementation listener = new IndexDiffChangedListenerImplementation();
-		IndexDiffCacheEntry indexDiffCacheEntry = new IndexDiffCacheEntry(repository, listener);
-		cachedEntries.put(listener, indexDiffCacheEntry);
-		return indexDiffCacheEntry;
-	}
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -62,18 +70,11 @@ public class ResetConfigWithHead extends DiscardChangesActionHandler {
 		return null;
 	}
 
-	/**
-	 * @param indexDiffCacheEntry
-	 * @return den ReadDoneListener für die ChacheEntry oder null
-	 */
-	@Nullable
-	protected IndexDiffChangedListenerImplementation getListener(IndexDiffCacheEntry indexDiffCacheEntry) {
-
-		Optional<IndexDiffChangedListenerImplementation> findAny = cachedEntries.keySet().stream().filter(l -> cachedEntries.get(l) == indexDiffCacheEntry).findAny();
-		if (findAny.isPresent())
-			return findAny.get();
-		else
-			return null;
+	private IndexDiffCacheEntry toDiffCache(Repository repository) {
+		IndexDiffChangedListenerImplementation listener = new IndexDiffChangedListenerImplementation();
+		IndexDiffCacheEntry indexDiffCacheEntry = new IndexDiffCacheEntry(repository, listener);
+		cachedEntries.put(listener, indexDiffCacheEntry);
+		return indexDiffCacheEntry;
 	}
 
 	/**
@@ -112,12 +113,34 @@ public class ResetConfigWithHead extends DiscardChangesActionHandler {
 			return Status.OK_STATUS;
 		}
 
+		/**
+		 * @param indexDiffCacheEntry
+		 * @return den ReadDoneListener für die ChacheEntry oder null
+		 */
+		@Nullable
+		protected IndexDiffChangedListenerImplementation getListener(IndexDiffCacheEntry indexDiffCacheEntry) {
+
+			Optional<IndexDiffChangedListenerImplementation> findAny = cachedEntries.keySet().stream().filter(l -> cachedEntries.get(l) == indexDiffCacheEntry).findAny();
+			if (findAny.isPresent())
+				return findAny.get();
+			else
+				return null;
+		}
+
 		private void resetConfigFiles(File workTree, IndexDiffData indexDiffData, IProgressMonitor monitor) throws CoreException {
 			Set<String> modifiedFiles = indexDiffData.getModified();
-			List<IPath> paths = modifiedFiles.stream().filter(this::isConfigFile).map(relativePath -> new File(workTree, relativePath).getAbsolutePath()).map(Path::new).collect(Collectors.toList());
+			List<IPath> configFilesPathsToReset = modifiedFiles.stream().filter(this::isConfigFile).map(relativePath -> new File(workTree, relativePath).getAbsolutePath()).map(Path::new).collect(Collectors.toList());
+			if(!configFilesPathsToReset.isEmpty()) {
+				DiscardChangesOperation discardOperation = new DiscardChangesOperation(configFilesPathsToReset);
+				discardOperation.execute(monitor);
+			}
 
-			DiscardChangesOperation operation = new DiscardChangesOperation(paths);
-			operation.execute(monitor);
+			Set<String> untrackedFiles = indexDiffData.getUntracked();
+			List<IPath> configFilesPathsToDelete = untrackedFiles.stream().filter(this::isConfigFileToDelete).map(relativePath -> new File(workTree, relativePath).getAbsolutePath()).map(Path::new).collect(Collectors.toList());
+			if(!configFilesPathsToDelete.isEmpty()) {
+				DeletePathsOperation deleteOperation = new DeletePathsOperation(configFilesPathsToDelete);
+				deleteOperation.execute(monitor);
+			}
 		}
 
 		private boolean isConfigFile(String relativeFilePath) {
@@ -128,6 +151,19 @@ public class ResetConfigWithHead extends DiscardChangesActionHandler {
 			if (relativeFilePath.endsWith("org.eclipse.wst.common.component"))
 				return true;
 			if (relativeFilePath.endsWith("org.eclipse.jdt.core.prefs"))
+				return true;
+			if (relativeFilePath.endsWith("org.eclipse.core.resources.prefs"))
+				return true;
+			if (relativeFilePath.endsWith("org.eclipse.wst.common.project.facet.core.xml"))
+				return true;
+
+			return false;
+		}
+
+		private boolean isConfigFileToDelete(String relativeFilePath) {
+			if (relativeFilePath.endsWith("org.eclipse.wst.validation.prefs"))
+				return true;
+			if (relativeFilePath.endsWith("org.eclipse.wst.common.project.facet.core.prefs.xml"))
 				return true;
 
 			return false;

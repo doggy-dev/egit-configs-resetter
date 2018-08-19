@@ -19,5 +19,12 @@
 				style="push"
 				tooltip="Reset Configuration Files" />
 		</menuContribution>
+  <menuContribution
+        locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=repo-commit">
+     <command
+           commandId="de.markov.egit.resettercommand"
+           style="push">
+     </command>
+  </menuContribution>
 	</extension>
 </fragment>

@@ -6,6 +6,11 @@ This project for eclipse IDE enables you to reset certain config files:
  * .project
  * org.eclipse.wst.common.component
  * org.eclipse.jdt.core.prefs
+ * org.eclipse.core.resources.prefs
+ * org.eclipse.wst.common.project.facet.core.xml
+ 
+ * org.eclipse.wst.validation.prefs
+ * org.eclipse.wst.common.project.facet.core.prefs.xml
  
  Works with multiple selected repositories.
  
